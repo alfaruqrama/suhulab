@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suhulab-v1';
+const CACHE_NAME = 'suhulab-v2';
 const ASSETS = [
   '/',
   '/index.html',
