@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Monitor Suhu Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0d7a6b">
-  <style>
+<style>
   :root {
     --bg: #f0f4f8;
     --card: #ffffff;
@@ -104,7 +102,12 @@
   /* CONTENT */
   .content {
     padding: 14px 16px 90px;
-    display: flex; flex-direction: column; gap: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
   /* BANNER */
@@ -132,8 +135,8 @@
   /* TEMP CARD */
   .temp-card {
     background: var(--card);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 11px 12px;
     box-shadow: var(--shadow-card);
     border: 1.5px solid var(--border);
     position: relative;
@@ -141,37 +144,38 @@
     transition: transform 0.15s, box-shadow 0.15s;
     animation: fadeSlideIn 0.4s ease both;
   }
-  .temp-card:active { transform: scale(0.98); }
-  .temp-card.status-normal { border-left: 4px solid var(--accent); }
-  .temp-card.status-alert { border-left: 4px solid var(--danger); background: #fffafa; }
-  .temp-card.status-warn { border-left: 4px solid var(--warn); background: #fffdf5; }
+  .temp-card:active { transform: scale(0.97); }
+  .temp-card.status-normal { border-left: 3px solid var(--accent); }
+  .temp-card.status-alert { border-left: 3px solid var(--danger); background: #fffafa; }
+  .temp-card.status-warn { border-left: 3px solid var(--warn); background: #fffdf5; }
 
-  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .card-name { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; gap: 4px; }
+  .card-name { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-muted); line-height: 1.3; }
   .badge {
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 2px 6px; border-radius: 20px;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.3px;
     font-family: 'Space Mono', monospace;
+    flex-shrink: 0;
   }
   .badge.normal { background: var(--primary-light); color: var(--primary); }
   .badge.alert { background: var(--danger-light); color: var(--danger); }
   .badge.warn { background: var(--warn-light); color: var(--warn); }
 
-  .temp-display { display: flex; align-items: baseline; gap: 2px; margin-bottom: 8px; }
+  .temp-display { display: flex; align-items: baseline; gap: 1px; margin-bottom: 6px; }
   .temp-value {
     font-family: 'Space Mono', monospace;
-    font-size: 48px; font-weight: 700; line-height: 1;
+    font-size: 30px; font-weight: 700; line-height: 1;
     transition: color 0.4s;
   }
   .temp-value.normal { color: var(--primary); }
   .temp-value.alert { color: var(--danger); }
   .temp-value.warn { color: var(--warn); }
-  .temp-unit { font-size: 20px; font-weight: 400; color: var(--text-muted); margin-bottom: 6px; }
+  .temp-unit { font-size: 13px; font-weight: 400; color: var(--text-muted); margin-bottom: 3px; }
 
   /* Thermometer mini bar */
-  .temp-bar-wrap { margin-bottom: 10px; }
+  .temp-bar-wrap { margin-bottom: 7px; }
   .temp-bar-track {
-    height: 5px; background: var(--border); border-radius: 10px;
+    height: 4px; background: var(--border); border-radius: 10px;
     position: relative; overflow: visible;
   }
   .temp-bar-fill {
@@ -183,9 +187,9 @@
   .temp-bar-fill.alert { background: linear-gradient(90deg, #f87171, #e84040); }
   .temp-bar-fill.warn { background: linear-gradient(90deg, #fcd34d, #f59e0b); }
 
-  .card-meta { display: flex; justify-content: space-between; align-items: center; }
-  .meta-text { font-size: 11px; color: var(--text-muted); }
-  .meta-time { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
+  .card-meta { display: flex; flex-direction: column; gap: 1px; }
+  .meta-text { font-size: 9px; color: var(--text-muted); }
+  .meta-time { font-size: 8px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
 
   /* ====== GRAFIK TAB ====== */
   .chart-section { display: none; flex-direction: column; gap: 14px; padding: 14px 16px 90px; }
@@ -491,6 +495,9 @@ function renderSuhu() {
     lbl.textContent = sec.section;
     cont.appendChild(lbl);
 
+    const grid = document.createElement('div');
+    grid.className = 'cards-grid';
+
     sec.items.forEach((item, ii) => {
       const status = getStatus(item);
       const pct = getBarPct(item);
@@ -500,7 +507,7 @@ function renderSuhu() {
       card.innerHTML = `
         <div class="card-header">
           <div class="card-name">${item.name}</div>
-          <div class="badge ${status}">${status === 'normal' ? 'Normal' : status === 'warn' ? 'Waspada' : '⚠ ALERT'}</div>
+          <div class="badge ${status}">${status === 'normal' ? 'OK' : status === 'warn' ? '⚠' : '🚨'}</div>
         </div>
         <div class="temp-display">
           <div class="temp-value ${status}">${item.suhu.toFixed(1)}</div>
@@ -512,18 +519,19 @@ function renderSuhu() {
           </div>
         </div>
         <div class="card-meta">
-          <div class="meta-text">Batas: ${item.min}°C – ${item.max}°C</div>
-          <div class="meta-time">Diperbaharui: ${getTimeStr()}</div>
+          <div class="meta-text">Batas: ${item.min}° – ${item.max}°</div>
+          <div class="meta-time">${getTimeStr()}</div>
         </div>
       `;
-      // tap to simulate fluctuation
       card.addEventListener('click', () => {
         const delta = (Math.random() - 0.5) * 1.5;
         item.suhu = Math.round((item.suhu + delta) * 10) / 10;
         renderSuhu();
       });
-      cont.appendChild(card);
+      grid.appendChild(card);
     });
+
+    cont.appendChild(grid);
   });
 }
 
@@ -701,7 +709,7 @@ function showToast(msg) {
 // ====== INIT ======
 renderSuhu();
 
-// auto-fluctuate every 10s (simulasi realtime)
+// auto-refresh every 15 minutes (900000ms)
 setInterval(() => {
   rooms.forEach(sec => sec.items.forEach(item => {
     const delta = (Math.random() - 0.5) * 0.3;
@@ -709,16 +717,8 @@ setInterval(() => {
   }));
   renderSuhu();
   if (chartInstance) updateChart();
-}, 10000);
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('SW registered'))
-        .catch(e => console.log('SW error', e));
-    });
-  }
+  showToast('🔄 Data diperbarui otomatis');
+}, 900000);
 </script>
 </body>
 </html>
