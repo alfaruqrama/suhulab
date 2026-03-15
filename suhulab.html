@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Monitor Suhu Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0d7a6b">
+  <style>
   :root {
     --bg: #f0f4f8;
     --card: #ffffff;
@@ -708,6 +710,15 @@ setInterval(() => {
   renderSuhu();
   if (chartInstance) updateChart();
 }, 10000);
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('SW registered'))
+        .catch(e => console.log('SW error', e));
+    });
+  }
 </script>
 </body>
 </html>
