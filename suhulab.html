@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Monitor Suhu Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --primary: #0d7a6b;
+    --primary-light: #e0f5f2;
+    --accent: #00c9a7;
+    --danger: #e84040;
+    --danger-light: #fdeaea;
+    --warn: #f59e0b;
+    --warn-light: #fef3c7;
+    --text: #1a2535;
+    --text-muted: #7a8fa6;
+    --border: #dde6ef;
+    --nav-bg: #ffffff;
+    --shadow: 0 2px 16px rgba(13,122,107,0.08);
+    --shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 20px rgba(13,122,107,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--card);
+    padding: 14px 18px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #0d7a6b, #00c9a7);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 3px 10px rgba(13,122,107,0.3);
+  }
+  .header-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .header-sub { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; letter-spacing: 0.5px; }
+  .btn-refresh {
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-refresh:hover { border-color: var(--accent); color: var(--primary); }
+  .btn-refresh.spinning .refresh-icon { animation: spin 0.8s linear; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .refresh-icon { display: inline-block; font-size: 14px; }
+
+  /* TABS */
+  .tabs {
+    background: var(--card);
+    display: flex;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 0;
+  }
+  .tab {
+    padding: 10px 14px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2.5px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  .tab:hover { color: var(--primary); }
+
+  /* CONTENT */
+  .content {
+    padding: 14px 16px 90px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* BANNER */
+  .banner {
+    padding: 12px 14px;
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500;
+    animation: fadeSlideIn 0.4s ease;
+  }
+  .banner.ok { background: var(--primary-light); color: var(--primary); }
+  .banner.alert { background: var(--danger-light); color: var(--danger); }
+  .banner.warn { background: var(--warn-light); color: var(--warn); }
+  .banner-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 4px 0 2px;
+  }
+
+  /* TEMP CARD */
+  .temp-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-card);
+    border: 1.5px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    animation: fadeSlideIn 0.4s ease both;
+  }
+  .temp-card:active { transform: scale(0.98); }
+  .temp-card.status-normal { border-left: 4px solid var(--accent); }
+  .temp-card.status-alert { border-left: 4px solid var(--danger); background: #fffafa; }
+  .temp-card.status-warn { border-left: 4px solid var(--warn); background: #fffdf5; }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-name { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+  .badge {
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    font-family: 'Space Mono', monospace;
+  }
+  .badge.normal { background: var(--primary-light); color: var(--primary); }
+  .badge.alert { background: var(--danger-light); color: var(--danger); }
+  .badge.warn { background: var(--warn-light); color: var(--warn); }
+
+  .temp-display { display: flex; align-items: baseline; gap: 2px; margin-bottom: 8px; }
+  .temp-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 48px; font-weight: 700; line-height: 1;
+    transition: color 0.4s;
+  }
+  .temp-value.normal { color: var(--primary); }
+  .temp-value.alert { color: var(--danger); }
+  .temp-value.warn { color: var(--warn); }
+  .temp-unit { font-size: 20px; font-weight: 400; color: var(--text-muted); margin-bottom: 6px; }
+
+  /* Thermometer mini bar */
+  .temp-bar-wrap { margin-bottom: 10px; }
+  .temp-bar-track {
+    height: 5px; background: var(--border); border-radius: 10px;
+    position: relative; overflow: visible;
+  }
+  .temp-bar-fill {
+    height: 100%; border-radius: 10px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1), background 0.4s;
+    position: relative;
+  }
+  .temp-bar-fill.normal { background: linear-gradient(90deg, #00c9a7, #0d7a6b); }
+  .temp-bar-fill.alert { background: linear-gradient(90deg, #f87171, #e84040); }
+  .temp-bar-fill.warn { background: linear-gradient(90deg, #fcd34d, #f59e0b); }
+
+  .card-meta { display: flex; justify-content: space-between; align-items: center; }
+  .meta-text { font-size: 11px; color: var(--text-muted); }
+  .meta-time { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
+
+  /* ====== GRAFIK TAB ====== */
+  .chart-section { display: none; flex-direction: column; gap: 14px; padding: 14px 16px 90px; }
+  .chart-card {
+    background: var(--card); border-radius: 14px;
+    padding: 16px; box-shadow: var(--shadow-card);
+    border: 1.5px solid var(--border);
+  }
+  .chart-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .chart-wrap { width: 100%; overflow-x: auto; }
+  canvas { display: block; width: 100% !important; }
+
+  /* ====== LOG TAB ====== */
+  .log-section { display: none; flex-direction: column; gap: 12px; padding: 14px 16px 90px; }
+  .log-form-card {
+    background: var(--card); border-radius: 14px;
+    padding: 16px; box-shadow: var(--shadow-card);
+    border: 1.5px solid var(--border);
+  }
+  .log-form-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap-6px; }
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 5px; }
+  .form-input, .form-select {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    color: var(--text); background: var(--bg);
+    outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); background: white; }
+  .btn-submit {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, #0d7a6b, #00c9a7);
+    color: white; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-submit:active { transform: scale(0.98); opacity: 0.9; }
+
+  .log-history-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 4px 0; }
+  .log-item {
+    background: var(--card); border-radius: 11px;
+    padding: 12px 14px; box-shadow: var(--shadow-card);
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    animation: fadeSlideIn 0.3s ease;
+  }
+  .log-item-left .log-ruangan { font-size: 12px; font-weight: 600; color: var(--text); }
+  .log-item-left .log-waktu { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text-muted); margin-top: 2px; }
+  .log-item-right { text-align: right; }
+  .log-suhu { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; }
+  .log-suhu.normal { color: var(--primary); }
+  .log-suhu.alert { color: var(--danger); }
+  .log-suhu.warn { color: var(--warn); }
+  .log-badge { font-size: 10px; margin-top: 2px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: var(--nav-bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 6px 0 12px;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 4px 0;
+    transition: all 0.2s;
+  }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); }
+  .nav-item.active .nav-label { color: var(--primary); }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 4px rgba(13,122,107,0.4)); }
+  .nav-dot {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--primary);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .nav-item.active .nav-dot { opacity: 1; }
+
+  /* ANIMATIONS */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-alert {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .pulse { animation: pulse-alert 1.5s ease-in-out infinite; }
+
+  /* EXPORT BTN */
+  .btn-export {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 11px;
+    background: white; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 13px; font-weight: 600;
+    color: var(--primary); cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-export:hover { border-color: var(--accent); background: var(--primary-light); }
+
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a2535; color: white;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    opacity: 0; transition: all 0.3s;
+    z-index: 200; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">🌡️</div>
+    <div>
+      <div class="header-title">Monitor Suhu Lab</div>
+      <div class="header-sub" id="headerSub">RS PETROKIMIA GRESIK · <span id="headerTime">--:--:--</span></div>
+    </div>
+  </div>
+  <button class="btn-refresh" onclick="doRefresh(this)">
+    <span class="refresh-icon">🔄</span> Refresh
+  </button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('suhu', this)">🌡️ Suhu</div>
+  <div class="tab" onclick="switchTab('grafik', this)">📊 Grafik</div>
+  <div class="tab" onclick="switchTab('log', this)">📋 Log Manual</div>
+</div>
+
+<!-- TAB: SUHU -->
+<div class="content" id="tab-suhu"></div>
+
+<!-- TAB: GRAFIK -->
+<div class="chart-section" id="tab-grafik">
+  <div class="chart-card">
+    <div class="chart-title">📈 Tren Suhu Hari Ini</div>
+    <div class="chart-wrap"><canvas id="chartMain" height="180"></canvas></div>
+  </div>
+</div>
+
+<!-- TAB: LOG -->
+<div class="log-section" id="tab-log">
+  <div class="log-form-card">
+    <div class="log-form-title">✏️ Input Suhu Manual</div>
+    <div class="form-group">
+      <label class="form-label">Ruangan</label>
+      <select class="form-select" id="logRuangan">
+        <option value="Ruang Lab Utama">Ruang Lab Utama</option>
+        <option value="BSA (Biosafety Cabinet)">BSA (Biosafety Cabinet)</option>
+        <option value="Kulkas Reagen 1">Kulkas Reagen 1</option>
+        <option value="Kulkas Reagen 2">Kulkas Reagen 2</option>
+        <option value="Freezer -20°C">Freezer -20°C</option>
+        <option value="Bank Darah - Kulkas">Bank Darah - Kulkas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Suhu (°C)</label>
+      <input class="form-input" type="number" id="logSuhu" placeholder="Contoh: 4.5" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catatan (opsional)</label>
+      <input class="form-input" type="text" id="logCatatan" placeholder="Contoh: setelah defrost">
+    </div>
+    <button class="btn-submit" onclick="submitLog()">💾 Simpan Data</button>
+  </div>
+  <div class="log-history-title">Riwayat Log</div>
+  <div id="logList"></div>
+  <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchNav('suhu', this)">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">Beranda</div>
+    <div class="nav-dot"></div>
+  </div>
+  <div class="nav-item" onclick="switchNav('grafik', this)">
+    <div class="nav-icon">📈</div>
+    <div class="nav-label">Grafik</div>
+    <div class="nav-dot"></div>
+  </div>
+  <div class="nav-item active-tab" onclick="switchNav('suhu', this)" style="position:relative;">
+    <div class="nav-icon">🌡️</div>
+    <div class="nav-label" style="color:var(--primary)">Suhu</div>
+    <div class="nav-dot" style="opacity:1"></div>
+  </div>
+  <div class="nav-item" onclick="switchNav('log', this)">
+    <div class="nav-icon">📋</div>
+    <div class="nav-label">Laporan</div>
+    <div class="nav-dot"></div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">ℹ️</div>
+    <div class="nav-label">Info</div>
+    <div class="nav-dot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ====== DATA ======
+const rooms = [
+  {
+    section: "🔬 Laboratorium",
+    items: [
+      { id: "lab-utama", name: "Ruang Lab Utama", suhu: 24.0, min: 20, max: 26 },
+      { id: "bsa", name: "BSA (Biosafety Cabinet)", suhu: 23.7, min: 20, max: 26 },
+    ]
+  },
+  {
+    section: "🧊 Kulkas & Freezer",
+    items: [
+      { id: "kulkas-1", name: "Kulkas Reagen 1", suhu: 4.2, min: 2, max: 8 },
+      { id: "kulkas-2", name: "Kulkas Reagen 2", suhu: 9.1, min: 2, max: 8 },
+      { id: "freezer", name: "Freezer -20°C", suhu: -18.5, min: -25, max: -15 },
+      { id: "bd-kulkas", name: "Bank Darah - Kulkas", suhu: 5.8, min: 4, max: 6 },
+    ]
+  }
+];
+
+let logData = [
+  { ruangan: "Kulkas Reagen 1", suhu: 4.2, catatan: "", waktu: getTimeStr(-30) },
+  { ruangan: "Ruang Lab Utama", suhu: 24.0, catatan: "normal", waktu: getTimeStr(-60) },
+  { ruangan: "Freezer -20°C", suhu: -18.5, catatan: "", waktu: getTimeStr(-90) },
+];
+
+function getTimeStr(offsetMin = 0) {
+  const d = new Date(Date.now() + offsetMin * 60000);
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function getStatus(item) {
+  if (item.suhu > item.max) return 'alert';
+  if (item.suhu < item.min) return 'alert';
+  const range = item.max - item.min;
+  const margin = range * 0.15;
+  if (item.suhu > item.max - margin || item.suhu < item.min + margin) return 'warn';
+  return 'normal';
+}
+
+function getBarPct(item) {
+  const span = item.max - item.min;
+  const extended = span * 0.3;
+  const lo = item.min - extended, hi = item.max + extended;
+  return Math.min(100, Math.max(5, ((item.suhu - lo) / (hi - lo)) * 100));
+}
+
+// ====== CLOCK ======
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerTime').textContent =
+    now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ====== RENDER SUHU ======
+function renderSuhu() {
+  const cont = document.getElementById('tab-suhu');
+  cont.innerHTML = '';
+
+  // check alerts
+  let alerts = [], warns = [];
+  rooms.forEach(sec => sec.items.forEach(item => {
+    const s = getStatus(item);
+    if (s === 'alert') alerts.push(item.name);
+    if (s === 'warn') warns.push(item.name);
+  }));
+
+  // banner
+  const banner = document.createElement('div');
+  if (alerts.length > 0) {
+    banner.className = 'banner alert';
+    banner.innerHTML = `<span class="banner-icon pulse">🚨</span><span><b>ALERT!</b> Suhu abnormal: ${alerts.join(', ')}</span>`;
+  } else if (warns.length > 0) {
+    banner.className = 'banner warn';
+    banner.innerHTML = `<span class="banner-icon">⚠️</span><span>Perhatian: ${warns.join(', ')} mendekati batas</span>`;
+  } else {
+    banner.className = 'banner ok';
+    banner.innerHTML = `<span class="banner-icon">✅</span><span>Semua sensor dalam batas normal</span>`;
+  }
+  cont.appendChild(banner);
+
+  rooms.forEach((sec, si) => {
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.textContent = sec.section;
+    cont.appendChild(lbl);
+
+    sec.items.forEach((item, ii) => {
+      const status = getStatus(item);
+      const pct = getBarPct(item);
+      const card = document.createElement('div');
+      card.className = `temp-card status-${status}`;
+      card.style.animationDelay = `${(si * 3 + ii) * 0.07}s`;
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-name">${item.name}</div>
+          <div class="badge ${status}">${status === 'normal' ? 'Normal' : status === 'warn' ? 'Waspada' : '⚠ ALERT'}</div>
+        </div>
+        <div class="temp-display">
+          <div class="temp-value ${status}">${item.suhu.toFixed(1)}</div>
+          <div class="temp-unit">°C</div>
+        </div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar-track">
+            <div class="temp-bar-fill ${status}" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div class="card-meta">
+          <div class="meta-text">Batas: ${item.min}°C – ${item.max}°C</div>
+          <div class="meta-time">Diperbaharui: ${getTimeStr()}</div>
+        </div>
+      `;
+      // tap to simulate fluctuation
+      card.addEventListener('click', () => {
+        const delta = (Math.random() - 0.5) * 1.5;
+        item.suhu = Math.round((item.suhu + delta) * 10) / 10;
+        renderSuhu();
+      });
+      cont.appendChild(card);
+    });
+  });
+}
+
+// ====== REFRESH ======
+function doRefresh(btn) {
+  btn.classList.add('spinning');
+  rooms.forEach(sec => sec.items.forEach(item => {
+    const delta = (Math.random() - 0.5) * 0.8;
+    item.suhu = Math.round((item.suhu + delta) * 10) / 10;
+  }));
+  setTimeout(() => {
+    renderSuhu();
+    btn.classList.remove('spinning');
+    showToast('Data diperbarui ✓');
+    if (chartInstance) updateChart();
+  }, 600);
+}
+
+// ====== TABS ======
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-suhu').style.display = tab === 'suhu' ? 'flex' : 'none';
+  document.getElementById('tab-grafik').style.display = tab === 'grafik' ? 'flex' : 'none';
+  document.getElementById('tab-log').style.display = tab === 'log' ? 'flex' : 'none';
+  if (tab === 'grafik' && !chartInstance) initChart();
+  if (tab === 'log') renderLogList();
+}
+
+function switchNav(tab, el) {
+  const tabEl = document.querySelector(`.tabs .tab:nth-child(${tab === 'suhu' ? 1 : tab === 'grafik' ? 2 : 3})`);
+  if (tabEl) switchTab(tab, tabEl);
+}
+
+// ====== CHART ======
+let chartInstance = null;
+const chartLabels = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
+
+function getChartData() {
+  return {
+    labUtama: [24.1,23.9,24.3,24.0,23.8,24.2,24.4,23.7,24.1,24.3,24.0,24.0],
+    kulkas1:  [4.1,4.2,4.3,4.2,4.1,4.3,4.2,4.0,4.2,4.3,4.1,4.2],
+    freezer:  [-18.2,-18.5,-18.7,-18.4,-18.6,-18.3,-18.5,-18.8,-18.5,-18.4,-18.6,-18.5],
+  };
+}
+
+function initChart() {
+  const ctx = document.getElementById('chartMain').getContext('2d');
+  const d = getChartData();
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Ruang Lab', data: d.labUtama,
+          borderColor: '#0d7a6b', backgroundColor: 'rgba(13,122,107,0.07)',
+          borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true,
+        },
+        {
+          label: 'Kulkas 1', data: d.kulkas1,
+          borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.07)',
+          borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true,
+        },
+        {
+          label: 'Freezer', data: d.freezer,
+          borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.07)',
+          borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'DM Sans', size: 11 }, boxWidth: 12, padding: 12 } }
+      },
+      scales: {
+        x: { ticks: { font: { family: 'Space Mono', size: 9 }, color: '#7a8fa6' }, grid: { color: '#eef2f7' } },
+        y: { ticks: { font: { family: 'Space Mono', size: 9 }, color: '#7a8fa6' }, grid: { color: '#eef2f7' } }
+      }
+    }
+  });
+  document.getElementById('chartMain').style.height = '200px';
+}
+
+function updateChart() {
+  if (!chartInstance) return;
+  const last = chartInstance.data.datasets[0].data.length;
+  const labNow = rooms[0].items[0].suhu;
+  const k1now = rooms[1].items[0].suhu;
+  const fznow = rooms[1].items[2].suhu;
+  chartInstance.data.datasets[0].data[last - 1] = labNow;
+  chartInstance.data.datasets[1].data[last - 1] = k1now;
+  chartInstance.data.datasets[2].data[last - 1] = fznow;
+  chartInstance.update();
+}
+
+// ====== LOG ======
+function submitLog() {
+  const ruangan = document.getElementById('logRuangan').value;
+  const suhu = parseFloat(document.getElementById('logSuhu').value);
+  const catatan = document.getElementById('logCatatan').value;
+
+  if (isNaN(suhu)) { showToast('⚠ Masukkan nilai suhu yang valid'); return; }
+
+  logData.unshift({ ruangan, suhu, catatan, waktu: getTimeStr() });
+  document.getElementById('logSuhu').value = '';
+  document.getElementById('logCatatan').value = '';
+  renderLogList();
+  showToast('✓ Data tersimpan');
+
+  // update live card if ruangan matches
+  rooms.forEach(sec => sec.items.forEach(item => {
+    if (item.name === ruangan) { item.suhu = suhu; renderSuhu(); }
+  }));
+}
+
+function getLogStatus(entry) {
+  const room = rooms.flatMap(s => s.items).find(i => i.name === entry.ruangan);
+  if (!room) return 'normal';
+  if (entry.suhu > room.max || entry.suhu < room.min) return 'alert';
+  const range = room.max - room.min;
+  const margin = range * 0.15;
+  if (entry.suhu > room.max - margin || entry.suhu < room.min + margin) return 'warn';
+  return 'normal';
+}
+
+function renderLogList() {
+  const list = document.getElementById('logList');
+  list.innerHTML = '';
+  if (logData.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px">Belum ada log</div>';
+    return;
+  }
+  logData.slice(0, 15).forEach(entry => {
+    const status = getLogStatus(entry);
+    const div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `
+      <div class="log-item-left">
+        <div class="log-ruangan">${entry.ruangan}</div>
+        <div class="log-waktu">${entry.waktu}${entry.catatan ? ' · ' + entry.catatan : ''}</div>
+      </div>
+      <div class="log-item-right">
+        <div class="log-suhu ${status}">${entry.suhu.toFixed(1)}°</div>
+        <div class="log-badge">${status === 'normal' ? '✅' : status === 'warn' ? '⚠️' : '🚨'}</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ====== EXPORT CSV ======
+function exportCSV() {
+  let csv = 'Waktu,Ruangan,Suhu (°C),Catatan\n';
+  logData.forEach(e => {
+    csv += `${e.waktu},"${e.ruangan}",${e.suhu},"${e.catatan}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `suhulab_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('📥 CSV berhasil didownload');
+}
+
+// ====== TOAST ======
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ====== INIT ======
+renderSuhu();
+
+// auto-fluctuate every 10s (simulasi realtime)
+setInterval(() => {
+  rooms.forEach(sec => sec.items.forEach(item => {
+    const delta = (Math.random() - 0.5) * 0.3;
+    item.suhu = Math.round((item.suhu + delta) * 10) / 10;
+  }));
+  renderSuhu();
+  if (chartInstance) updateChart();
+}, 10000);
+</script>
+</body>
+</html>
